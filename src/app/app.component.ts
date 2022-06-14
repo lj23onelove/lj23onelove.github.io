@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, HostListener } from '@angular/core';
+import {FormBuilder, Validators} from "@angular/forms";
+import {AppService} from "./app.service";
 
 @Component({
   selector: 'app-root',
@@ -6,5 +8,58 @@ import { Component } from '@angular/core';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent {
-  title = 'car-rent-app';
+  priceForm = this.fb.group( {
+    name: ['', Validators.required],
+    phone: ['', Validators.required],
+    car: ['', Validators.required],
+  });
+
+  carsData: any;
+
+  constructor(private fb: FormBuilder, private appService: AppService) {
+  }
+
+  ngOnInit() {
+    this.appService.getData(this.category).subscribe(carsData => this.carsData = carsData);
+  }
+
+  goScroll(target: HTMLElement, car?: any) {
+    target.scrollIntoView({behavior: "smooth"});
+    if (car) {
+      this.priceForm.patchValue({car: car.name});
+    }
+  }
+
+  trans: any;
+  @HostListener('document:mousemove', ['$event'])
+  onMouseMove(e: MouseEvent) {
+    this.trans = {transform: 'translate3d(' + ((e.clientX * 1) / 15) + 'px,' + ((e.clientY * 1) / 30) + 'px,0px)'};
+  }
+
+  bgPos: any;
+  @HostListener('document:scroll', ['$event'])
+  onScroll() {
+    this.bgPos = {backgroundPositionX: '0' + (0.6 * window.scrollY) + 'px'};
+  }
+
+  category: string = 'sport';
+  toggleCategory(category: string) {
+    this.category = category;
+    this.ngOnInit();
+  }
+
+  onSubmit() {
+    if (this.priceForm.valid) {
+      this.appService.sendQuery(this.priceForm)
+        .subscribe({
+          next: (response: any) => {
+            alert(response.message);
+            this.priceForm.reset();
+          },
+          error: (response) => {
+            alert(response.error.message);
+          }
+        });
+    }
+  }
 }
